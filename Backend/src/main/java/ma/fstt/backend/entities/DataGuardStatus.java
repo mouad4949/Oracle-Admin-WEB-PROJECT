@@ -3,8 +3,44 @@ import java.util.Date;
 public class DataGuardStatus {
     private String role;           // PRIMARY, STANDBY
     private String protectionMode;  // MAX_PERFORMANCE, MAX_AVAILABILITY, MAX_PROTECTION
-    private String transportLag;    // Lag en secondes
-    private Date lastApplyTime;
+    private String transportLag;    // Message indiquant l'état de la synchro
+    private Date lastApplyTime;    // Date de dernier apply
+    private String applyLag;     // Delai du apply
+    private String lastReceiveTime;
+    private String redoTransportStatus;
+    private Long   sequenceGap;
+
+    public void setApplyLag(String applyLag) {
+        this.applyLag = applyLag;
+    }
+
+    public void setLastReceiveTime(String lastReceiveTime) {
+        this.lastReceiveTime = lastReceiveTime;
+    }
+
+    public void setRedoTransportStatus(String redoTransportStatus) {
+        this.redoTransportStatus = redoTransportStatus;
+    }
+
+    public void setSequenceGap(Long sequenceGap) {
+        this.sequenceGap = sequenceGap;
+    }
+
+    public String getApplyLag() {
+        return applyLag;
+    }
+
+    public String getLastReceiveTime() {
+        return lastReceiveTime;
+    }
+
+    public String getRedoTransportStatus() {
+        return redoTransportStatus;
+    }
+
+    public Long getSequenceGap() {
+        return sequenceGap;
+    }
 
     public String getProtectionMode() {
         return protectionMode;
