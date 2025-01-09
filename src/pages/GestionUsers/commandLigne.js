@@ -19,22 +19,23 @@ const SQLTerminal = () => {
     const executeCommand = async (sqlCommand) => {
         setLoading(true);
         try {
-
             let response;
             const isSelectQuery = sqlCommand.trim().toLowerCase().startsWith("select");
-            if(isSelectQuery){
-                response = await axios.get("http://localhost:8080/executeSelectSql", {data: sqlCommand});
+            if (isSelectQuery) {
+                response = await axios.get("http://localhost:8080/executeSelectSql", {
+                    params: {sql: sqlCommand}, // Pass the SQL as a query parameter
+                });
                 setCommands(prevCommands => [
                     ...prevCommands,
-                    { type: 'input', content: sqlCommand },
-                    { type: 'output', content:  JSON.stringify(response.data, null, 2)}
-                ])
-            }else {
+                    {type: 'input', content: sqlCommand},
+                    {type: 'output', content: JSON.stringify(response.data, null, 2)},
+                ]);
+            } else {
                 response = await axios.post("http://localhost:8080/executeSql", sqlCommand);
                 setCommands(prevCommands => [
                     ...prevCommands,
-                    { type: 'input', content: sqlCommand },
-                    { type: 'output', content: response.data}
+                    {type: 'input', content: sqlCommand},
+                    {type: 'output', content: response.data}
                 ]);
             }
 
@@ -43,15 +44,16 @@ const SQLTerminal = () => {
             setHistoryIndex(-1);
 
 
-        } catch (error) {
-            setCommands(prevCommands => [
-                ...prevCommands,
-                { type: 'input', content: sqlCommand },
-                {type: 'output', content: error.response?.data || 'Error processing command'}
-            ]);
+            } catch (error) {
+                // setCommands(prevCommands => [
+                //     ...prevCommands,
+                //     { type: 'input', content: sqlCommand },
+                //     {type: 'output', content: error.response?.data || 'Error processing command'}
+                // ]);
+            }
+            setLoading(false);
         }
-        setLoading(false);
-    };
+    }
 
     const handleKeyDown = (e) => {
         if (e.key === 'Enter' && currentCommand.trim()) {
@@ -129,5 +131,6 @@ const SQLTerminal = () => {
         </div>
     );
 };
+}
 
 export default SQLTerminal;
