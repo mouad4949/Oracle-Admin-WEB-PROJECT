@@ -43,7 +43,7 @@ Develop a SPRING BOOT & REACT  web application capable of performing essential O
 
 ## Tech Stack
 - **Backend:** Spring Boot, Spring Security, JWT, JdbcTemplate
-- **Frontend:** React, Next.js, NextUI, Chart.js
+- **Frontend:** React, Chart.js
 - **Database:** Oracle Database (VPD, TDE, RMAN)
 
 ## Installation
