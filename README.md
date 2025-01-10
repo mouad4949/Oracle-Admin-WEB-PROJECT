@@ -6,7 +6,7 @@
 This project is a web-based Oracle database administration tool built with Spring Boot (backend) and React (frontend). It simulates key Oracle administration functionalities, providing an intuitive interface for database management tasks such as user management, backups/restorations, security configurations, performance monitoring, and high availability.
 
 ## Objectives
-Develop a J2EE-based web application capable of performing essential Oracle database administration operations:
+Develop a SPRING BOOT & REACT  web application capable of performing essential Oracle database administration operations:
 - User management
 - Backups and restorations
 - Data security
