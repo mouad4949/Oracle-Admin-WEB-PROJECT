@@ -34,39 +34,36 @@ public class PerformanceService {
     public List<AWRReport> getAWRReports() throws SQLException {
         List<AWRReport> awrReports = new ArrayList<>();
         String query = """
-             SELECT
-               b.snap_id,
-               b.begin_interval_time,
-                (
-                  (CASE
-                   WHEN LAG(a.value, 1, 0) OVER (ORDER BY b.snap_id) = 0
-                    THEN 0
+         SELECT
+           b.snap_id,
+           b.begin_interval_time,
+           b.end_interval_time,
+           (
+               CASE
+                   WHEN LAG(a.value, 1, 0) OVER (ORDER BY b.snap_id) = 0 THEN 0
                    ELSE
-                    (a.value - LAG(a.value, 1, 0) OVER (ORDER BY b.snap_id)) / ( (b.end_interval_time - b.begin_interval_time) * 86400 )
-                END) ) as cpu_usage_seconds,
-
-                (CASE
-                 WHEN LAG(c.value, 1, 0) OVER (ORDER BY b.snap_id) = 0
-                  THEN 0
-                 ELSE
-                  (c.value - LAG(c.value, 1, 0) OVER (ORDER BY b.snap_id)) / ( (b.end_interval_time - b.begin_interval_time) * 86400 )
-                 END) as db_time_seconds,
-               b.instance_number
-             FROM
-               dba_hist_sys_time_model a,
-               dba_hist_snapshot b,
-               dba_hist_sys_time_model c
-             WHERE
-                 a.snap_id = b.snap_id
-             AND a.dbid = b.dbid
-             AND a.instance_number = b.instance_number
-             AND a.stat_name = 'CPU time'
-             AND c.snap_id = b.snap_id
-             AND c.dbid = b.dbid
-             AND c.instance_number = b.instance_number
-             AND c.stat_name = 'DB time'
-             ORDER BY b.snap_id
+                       (a.value - LAG(a.value, 1, 0) OVER (ORDER BY b.snap_id)) /
+                       (
+                           EXTRACT(SECOND FROM (b.end_interval_time - b.begin_interval_time)) +
+                           EXTRACT(MINUTE FROM (b.end_interval_time - b.begin_interval_time)) * 60 +
+                           EXTRACT(HOUR FROM (b.end_interval_time - b.begin_interval_time)) * 3600
+                       )
+               END
+           ) AS cpu_usage_seconds,
+           b.instance_number
+         FROM
+           dba_hist_sys_time_model a
+         JOIN
+           dba_hist_snapshot b
+         ON
+           a.snap_id = b.snap_id
+         WHERE
+           a.stat_name = 'DB CPU'
+         ORDER BY
+           b.snap_id
      """;
+
+        log.info("Exécution de la requête pour récupérer les rapports AWR...");
         try (Connection connection = dataSource.getConnection();
              PreparedStatement ps = connection.prepareStatement(query);
              ResultSet rs = ps.executeQuery()) {
@@ -75,16 +72,16 @@ public class PerformanceService {
                 AWRReport awr = new AWRReport();
                 awr.setSnapId(rs.getLong("snap_id"));
                 awr.setCaptureTime(rs.getTimestamp("begin_interval_time"));
-                awr.setDbTimeSeconds(rs.getDouble("db_time_seconds"));
                 awr.setCpuUsageSeconds(rs.getDouble("cpu_usage_seconds"));
                 awr.setInstanceNumber(rs.getInt("instance_number"));
                 awrReports.add(awr);
             }
+            log.info("Requête exécutée avec succès. Nombre de rapports récupérés : {}", awrReports.size());
+        } catch (SQLException e) {
+            log.error("Impossible de récupérer les rapports AWR : {}", e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de l'exécution de la requête AWR.", e);
         }
-        catch (SQLException e) {
-            log.error("Impossible de récupérer les rapports AWR", e);
-            throw new RuntimeException("Impossible de récupérer les rapports AWR", e);
-        }
+
         return awrReports;
     }
 
@@ -135,38 +132,44 @@ public class PerformanceService {
     public ResourceUsage getResourceUsage() throws SQLException {
 
         String query =  """
-                 SELECT
-                     (SELECT value FROM v$sysstat WHERE name = 'CPU used by this session') as cpu,
-                     (SELECT value FROM v$osstat WHERE stat_name = 'BUSY_TIME') as os_busy_time,
-                     (SELECT value FROM v$parameter WHERE name = 'memory_target') as memory_target,
-                     (SELECT SUM(bytes) FROM v$sgastat WHERE pool = 'shared pool' AND name = 'free memory') as free_memory,
-                    (SELECT SUM(bytes) FROM v$sgastat WHERE pool = 'shared pool' AND name = 'used memory') as used_memory,
-                      (SELECT value FROM v$sysstat WHERE name = 'physical read bytes') as physical_read_bytes,
-                      (SELECT value FROM v$sysstat WHERE name = 'physical write bytes') as physical_write_bytes,
-                     CURRENT_TIMESTAMP as now
-                 FROM dual
-         """;
+             SELECT
+                 (SELECT value FROM v$sysstat WHERE name = 'CPU used by this session') as cpu,
+                 (SELECT value FROM v$osstat WHERE stat_name = 'BUSY_TIME') as os_busy_time,
+                 (SELECT value FROM v$parameter WHERE name = 'memory_target') as memory_target,
+                 (SELECT SUM(bytes) FROM v$sgastat WHERE pool = 'shared pool' AND name = 'free memory') as free_memory,
+                 (SELECT SUM(bytes) FROM v$sgastat WHERE pool = 'shared pool' AND name = 'used memory') as used_memory,
+                 (SELECT value FROM v$sysstat WHERE name = 'physical read bytes') as physical_read_bytes,
+                 (SELECT value FROM v$sysstat WHERE name = 'physical write bytes') as physical_write_bytes,
+                 (SELECT value FROM v$sysstat WHERE name = 'user I/O wait time') as io_wait_time,
+                 CURRENT_TIMESTAMP as now
+             FROM dual
+     """;
         ResourceUsage resourceUsage = new ResourceUsage();
         try (Connection connection = dataSource.getConnection();
              PreparedStatement ps = connection.prepareStatement(query);
              ResultSet rs = ps.executeQuery()) {
             if (rs.next()) {
-                //calcul le pourcentage du cpu
+                // Calculer le pourcentage du CPU
                 double cpu = rs.getDouble("cpu");
                 double os = rs.getDouble("os_busy_time");
                 double cpuUsage = (cpu / os) * 100;
                 resourceUsage.setCpuUsage(cpuUsage);
-                //calcul de l'utilisation de la mémoire
+
+                // Calculer l'utilisation de la mémoire
                 double usedMemory = rs.getDouble("used_memory");
                 long memoryTarget = rs.getLong("memory_target");
-                double memoryUsage = (usedMemory / memoryTarget) * 100;
+                double memoryUsage = (memoryTarget > 0) ? (usedMemory / memoryTarget) * 100 : 0;
                 resourceUsage.setMemoryUsage(memoryUsage);
+
+                // Autres champs
                 resourceUsage.setTimestamp(rs.getTimestamp("now"));
                 resourceUsage.setPhysicalReadBytes(rs.getDouble("physical_read_bytes"));
                 resourceUsage.setPhysicalWriteBytes(rs.getDouble("physical_write_bytes"));
                 resourceUsage.setMemoryTarget(memoryTarget);
-                resourceUsage.setIoWaitTime(0); //TODO
 
+                // Attribuer la valeur de l'I/O wait time
+                long ioWaitTime = rs.getLong("io_wait_time");
+                resourceUsage.setIoWaitTime(ioWaitTime);
             }
         } catch (SQLException e) {
             log.error("Impossible de récupérer les statistiques de performance", e);
@@ -174,4 +177,5 @@ public class PerformanceService {
         }
         return resourceUsage;
     }
+
 }

@@ -5,12 +5,13 @@ import ma.fstt.backend.entities.ASHReport;
 import ma.fstt.backend.entities.ResourceUsage;
 import ma.fstt.backend.service.PerformanceService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import java.sql.SQLException;
 import java.util.List;
-
+@CrossOrigin(origins = "https://localhost:3000")
 @RestController
 @RequestMapping("/api/performance")
 public class PerformanceController {
@@ -30,6 +31,7 @@ public class PerformanceController {
 
     @GetMapping("/resource-usage")
     public ResourceUsage getResourceUsage() throws SQLException {
-        return performanceService.getResourceUsage();
+        ResourceUsage usage = performanceService.getResourceUsage();
+        return usage;
     }
 }
