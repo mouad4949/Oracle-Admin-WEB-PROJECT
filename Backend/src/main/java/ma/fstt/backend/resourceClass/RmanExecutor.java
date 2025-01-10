@@ -1,14 +1,15 @@
 package ma.fstt.backend.resourceClass;
 
-
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-
+import java.util.Map;
 
 public class RmanExecutor {
 
-    public static String executeRmanScript(String rmanCommands ,String dockerContainer , Boolean isDocker) {
+    public static String executeRmanScript(String rmanCommands, String dockerContainer, Boolean isDocker) {
         StringBuilder output = new StringBuilder();
+        boolean rmanSuccess = false;
+        int exitCode = 0;
 
         try {
             // Define the command to run the script

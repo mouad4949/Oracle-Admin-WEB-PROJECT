@@ -1,0 +1,17 @@
+FROM container-registry.oracle.com/database/enterprise:latest
+
+USER root
+
+# Update package list
+RUN yum update -y
+
+# Install java 21
+RUN yum install -y java-21-openjdk-devel
+
+# Set java 21 as default
+RUN alternatives --set java /usr/lib/jvm/java-21-openjdk-21.0.1.3-1.el7_9.x86_64/bin/java
+
+# Verify java version
+RUN java -version
+
+USER oracle

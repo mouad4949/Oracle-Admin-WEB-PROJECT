@@ -1,22 +1,25 @@
 //RmanController.java
 package ma.fstt.backend.controllers;
 
+import ma.fstt.backend.dto.ScheduleRequest;
 import ma.fstt.backend.service.RmanService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 
 
-
+@CrossOrigin(origins = "http://localhost:3000")
 @RestController
 public class RmanController {
-    @Autowired
-    RmanService rmanService;
 
-    @GetMapping("/rman/test")
-    public String test() {
-        return rmanService.test();
+    private final RmanService rmanService;
+
+    @Autowired
+    public RmanController(RmanService rmanService) {
+        this.rmanService = rmanService;
     }
+
 
     @GetMapping("/rman/fullBackup")
     public String backup() {
@@ -37,6 +40,18 @@ public class RmanController {
     public String restoreByDate(@RequestParam String date) {
         return rmanService.restore_backup_date(date);
     }
+
+
+    @GetMapping("/rman/list_Backup")
+    public String listBackup(){
+        return rmanService.listBackupSummary();
+    }
+
+    @GetMapping("/rman/backup-pdb")
+    public String baclupPdb() {
+        return rmanService.backup_pdb();
+    }
+
 
 
 
