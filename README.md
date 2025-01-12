@@ -49,7 +49,7 @@ Develop a SPRING BOOT & REACT  web application capable of performing essential O
 ## Installation
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-repo.git
+   git clone https://github.com/mouad4949/Oracle-Admin-WEB-PROJECT.git
    ```
 2. Navigate to the backend and frontend directories and install dependencies.
 3. Configure Oracle database connection settings in the backend.
