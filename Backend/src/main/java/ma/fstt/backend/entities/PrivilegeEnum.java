@@ -1,0 +1,12 @@
+package ma.fstt.backend.entities;
+
+public enum PrivilegeEnum {
+    CREATE_SESSION ,CREATE_TABLE , ALTER_ANY_TABLE, DROP_ANY_TABLE,GRANT_ANY_PRIVILEGE,CREATE_USER,
+    DELETE_USER,
+    UPDATE_USER,
+    VIEW_USER,
+    CREATE_ROLE,
+    DELETE_ROLE,
+    UPDATE_ROLE,
+    VIEW_ROLE
+}
